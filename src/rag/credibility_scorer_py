@@ -1,0 +1,120 @@
+# src/rag/credibility_scorer.py
+import re
+from datetime import datetime
+from typing import Dict
+
+class CredibilityScorer:
+    """Custom tool for assessing paper credibility"""
+    
+    def __init__(self):
+        # High-impact venues
+        self.top_venues = [
+            'Nature', 'Science', 'Cell', 'PNAS',
+            'NeurIPS', 'ICML', 'ICLR', 'CVPR', 'ACL', 'EMNLP'
+        ]
+        
+        # arXiv categories by prestige
+        self.category_weights = {
+            'cs.LG': 1.0,
+            'cs.AI': 1.0,
+            'cs.CL': 0.95,
+            'stat.ML': 0.95,
+            'q-bio': 0.9,
+            'physics': 0.85
+        }
+    
+    def score(self, paper: Dict) -> float:
+        """Calculate credibility score (0-1)"""
+        scores = []
+        
+        # 1. Venue/Publication Score (0-1)
+        venue_score = self._score_venue(paper)
+        scores.append(venue_score * 0.3)
+        
+        # 2. Recency Score (0-1)
+        recency_score = self._score_recency(paper)
+        scores.append(recency_score * 0.2)
+        
+        # 3. Category Score (0-1)
+        category_score = self._score_category(paper)
+        scores.append(category_score * 0.2)
+        
+        # 4. Author Count (0-1) - more authors often = more rigorous
+        author_score = min(len(paper.get('authors', [])) / 10, 1.0)
+        scores.append(author_score * 0.15)
+        
+        # 5. Abstract Quality (0-1) - length and structure
+        abstract_score = self._score_abstract(paper)
+        scores.append(abstract_score * 0.15)
+        
+        return sum(scores)
+    
+    def _score_venue(self, paper: Dict) -> float:
+        """Score based on publication venue"""
+        title = paper.get('title', '').lower()
+        
+        for venue in self.top_venues:
+            if venue.lower() in title:
+                return 1.0
+        
+        # Default for arXiv preprints
+        return 0.6
+    
+    def _score_recency(self, paper: Dict) -> float:
+        """Score based on publication date"""
+        try:
+            published = datetime.fromisoformat(paper['published'].replace('Z', '+00:00'))
+            age_days = (datetime.now(published.tzinfo) - published).days
+            
+            # Decay over 5 years
+            if age_days < 365:
+                return 1.0
+            elif age_days < 365 * 2:
+                return 0.9
+            elif age_days < 365 * 3:
+                return 0.7
+            elif age_days < 365 * 5:
+                return 0.5
+            else:
+                return 0.3
+        except:
+            return 0.5  # Default
+    
+    def _score_category(self, paper: Dict) -> float:
+        """Score based on arXiv category"""
+        categories = paper.get('categories', [])
+        
+        if not categories:
+            return 0.5
+        
+        # Get highest category weight
+        max_weight = 0.5
+        for cat in categories:
+            for known_cat, weight in self.category_weights.items():
+                if cat.startswith(known_cat):
+                    max_weight = max(max_weight, weight)
+        
+        return max_weight
+    
+    def _score_abstract(self, paper: Dict) -> float:
+        """Score based on abstract quality"""
+        abstract = paper.get('abstract', '')
+        
+        # Length score
+        length = len(abstract)
+        if length < 100:
+            length_score = 0.3
+        elif length < 500:
+            length_score = 0.6
+        elif length < 2000:
+            length_score = 1.0
+        else:
+            length_score = 0.8  # Too long might be verbose
+        
+        # Structure indicators
+        has_methods = any(word in abstract.lower() for word in ['method', 'approach', 'algorithm', 'we propose'])
+        has_results = any(word in abstract.lower() for word in ['results', 'achieve', 'outperform', 'demonstrate'])
+        
+        structure_score = (0.5 * has_methods + 0.5 * has_results)
+        
+        return (length_score * 0.6 + structure_score * 0.4)

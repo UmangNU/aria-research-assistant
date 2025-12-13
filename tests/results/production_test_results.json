@@ -1,0 +1,61 @@
+{
+  "test_results": [
+    {
+      "scenario": "Normal query",
+      "success": true,
+      "quality": 0.38,
+      "reward": -0.24,
+      "papers_analyzed": 5,
+      "fallback_used": false
+    },
+    {
+      "scenario": "Short query",
+      "success": false,
+      "error": "Research pipeline failed: Query too short (minimum 3 characters)"
+    },
+    {
+      "scenario": "Complex query",
+      "success": true,
+      "quality": 0.34,
+      "reward": -0.31999999999999995,
+      "papers_analyzed": 8,
+      "fallback_used": false
+    }
+  ],
+  "logger_stats": {
+    "total_events": 11,
+    "event_types": {
+      "research_start": 2,
+      "agent_execution": 6,
+      "performance_metrics": 2,
+      "error": 1
+    },
+    "total_errors": 1,
+    "error_types": {
+      "ValidationError": 1
+    },
+    "session_duration": 1.771754
+  },
+  "performance_metrics": {
+    "operations": 3,
+    "avg_latency": 0.590296745300293,
+    "p50_latency": 0.42273592948913574,
+    "p95_latency": 1.2555350065231323,
+    "p99_latency": 1.3295615911483765,
+    "max_latency": 1.3480682373046875,
+    "min_latency": 8.606910705566406e-05,
+    "avg_memory_mb": 216.04166666666666,
+    "peak_memory_mb": 216.3125,
+    "avg_cpu_percent": 33.166666666666664,
+    "agent_latencies": {
+      "full_research": {
+        "avg": 0.8854020833969116,
+        "p95": 1.30180162191391
+      },
+      "full_research_failed": {
+        "avg": 8.606910705566406e-05,
+        "p95": 8.606910705566406e-05
+      }
+    }
+  }
+}
